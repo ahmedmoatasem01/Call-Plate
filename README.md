@@ -31,7 +31,7 @@ Welcome screen with logo and CTA button to start plate detection.
 
 ### 📤 Upload Page – Media Submission Interface  
 Upload your image/video, select options, and begin detection.  
-![Upload Page](screenshots/Screenshot_2025-06-15_041106.png)
+![Upload Page](screenshots/Screenshot 2025-06-15 041037.png)
 
 ---
 
