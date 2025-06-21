@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Upload | Car Plate Recognition</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #F9FAFB;
+      color: #111827;
+      padding: 2rem;
+    }
+    .card {
+      max-width: 500px;
+      margin: auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    .upload-input, .checkbox {
+      margin-top: 1rem;
+      width: 100%;
+    }
+    .button-primary {
+      background-color: #2563EB;
+      color: white;
+      border: none;
+      padding: 1rem 2rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      margin-top: 1rem;
+    }
+    .loading {
+      display: none;
+      margin: 1rem 0;
+      text-align: center;
+    }
+    .error-message {
+      color: #DC2626;
+      margin-top: 1rem;
+      display: none;
+    }
+    .back-link {
+      display: inline-block;
+      margin-bottom: 1rem;
+      color: #2563EB;
+      text-decoration: none;
+    }
+    .back-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <a href="/" class="back-link">← Back to Home</a>
+    <h2>Upload Your Media</h2>
+    <p>Select an image or video containing vehicle(s). Our system will scan and detect all visible license plates.<br />
+    Supported formats: JPG, PNG, MP4, MOV</p>
+    <form id="uploadForm">
+      <input class="upload-input" type="file" id="fileInput" accept="image/jpeg,image/png,video/mp4,video/quicktime" required />
+      <div class="checkbox">
+        <label><input type="checkbox" id="showInBrowser" checked /> Show result in browser only</label><br>
+        <label><input type="checkbox" id="enableDownload" /> Enable download after detection</label>
+      </div>
+      <button type="submit" class="button-primary">Detect Plates</button>
+    </form>
+    
+    <div class="loading" id="loadingIndicator">
+      Processing... Please wait
+    </div>
+    
+    <div class="error-message" id="errorMessage"></div>
+  </div>
+
+  <script>
+    document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const fileInput = document.getElementById('fileInput');
+      const file = fileInput.files[0];
+      
+      if (!file) {
+        showError('Please select a file first');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        showLoading();
+        const response = await fetch('/process', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+          // Store the results in sessionStorage
+          sessionStorage.setItem('detectionResults', JSON.stringify(data));
+          // Redirect to results page
+          window.location.href = '/results';
+        } else {
+          showError(data.message || 'No license plates detected');
+        }
+      } catch (error) {
+        showError('An error occurred while processing the file');
+        console.error('Error:', error);
+      } finally {
+        hideLoading();
+      }
+    });
+
+    function showLoading() {
+      document.getElementById('loadingIndicator').style.display = 'block';
+      document.getElementById('errorMessage').style.display = 'none';
+    }
+
+    function hideLoading() {
+      document.getElementById('loadingIndicator').style.display = 'none';
+    }
+
+    function showError(message) {
+      const errorMessage = document.getElementById('errorMessage');
+      errorMessage.textContent = message;
+      errorMessage.style.display = 'block';
+    }
+  </script>
+</body>
+</html>

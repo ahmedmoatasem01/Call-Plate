@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Results | Car Plate Recognition</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #F9FAFB;
+      color: #111827;
+      padding: 2rem;
+    }
+    .card {
+      max-width: 800px;
+      margin: auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    .processed-image {
+      max-width: 100%;
+      margin-top: 1rem;
+      border-radius: 0.5rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 2rem;
+    }
+    th, td {
+      padding: 1rem;
+      border-bottom: 1px solid #E5E7EB;
+      text-align: left;
+    }
+    .button-secondary {
+      background-color: #10B981;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      margin-right: 1rem;
+      text-transform: uppercase;
+      font-weight: 500;
+      border-radius: 0.5rem;
+      cursor: pointer;
+    }
+    .back-button {
+      background-color: #E5E7EB;
+      color: #111827;
+    }
+    .error-message {
+      color: #DC2626;
+      margin-top: 1rem;
+      text-align: center;
+    }
+    .back-link {
+      display: inline-block;
+      margin-bottom: 1rem;
+      color: #2563EB;
+      text-decoration: none;
+    }
+    .back-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <a href="/upload" class="back-link">← Back to Upload</a>
+    <h2>Recognition Results</h2>
+    <p>Here are the license plates we detected from your upload. You can download the results or view them below.</p>
+    
+    <div id="resultsContainer">
+     <!-- Image element for image results -->
+    <img id="processedImage" class="processed-image" src="" alt="Processed image with detected plates" style="display:none;" />
+
+<!-- Video element for video results -->
+  <source id="videoSource" src="" type="video/mp4">
+             Your browser does not support the video tag.
+            </video>
+
+            <div id="mediaComparison" style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+              <!-- Original -->
+              <div style="flex: 1; text-align: center;">
+                <img id="originalImage" class="processed-image" style="display:none;" />
+               <video id="originalVideo" class="processed-image" controls style="display:none;">
+              <source id="originalVideoSource" src="" type="video/mp4">
+              </video>
+                <h4>Original</h4>
+              </div>
+            
+              <!-- Processed -->
+              <div style="flex: 1; text-align: center;">
+                <img id="processedImageView" class="processed-image" style="display:none;" />
+                <video id="processedVideoView" class="processed-image" controls style="display:none;">
+                 <source id="processedVideoSource" src="" type="video/mp4">
+                  </video>
+                <h4>Processed</h4>
+              </div>
+            </div>
+            
+   
+
+            <table id="resultsTable">
+              <thead>
+                <tr>
+                  <th>Plate Number</th>
+                </tr>
+              </thead>
+              <tbody>
+              </tbody>
+            </table>
+            
+      <div style="margin-top: 2rem;">
+        <button class="button-secondary" id="downloadButton">Download Results</button>
+        <a href="/upload"><button class="button-secondary back-button">Upload Another File</button></a>
+      </div>
+    </div>
+
+    <div id="errorContainer" class="error-message" style="display: none;">
+      No results found. Please try uploading another image.
+    </div>
+  </div>
+
+  <script>
+document.addEventListener('DOMContentLoaded', function () {
+  const results = JSON.parse(sessionStorage.getItem('detectionResults'));
+  console.log("Detection Results:", results);
+
+  // Elements
+  const processedImageView = document.getElementById("processedImageView");
+  const originalImage = document.getElementById("originalImage");
+
+  const processedVideoView = document.getElementById("processedVideoView");
+  const originalVideo = document.getElementById("originalVideo");
+  const processedVideoSource = document.getElementById("processedVideoSource");
+  const originalVideoSource = document.getElementById("originalVideoSource");
+
+  const resultsTable = document.getElementById("resultsTable").getElementsByTagName("tbody")[0];
+  const downloadButton = document.getElementById("downloadButton");
+
+  // Hide all media by default
+  originalImage.style.display = "none";
+  processedImageView.style.display = "none";
+  originalVideo.style.display = "none";
+  processedVideoView.style.display = "none";
+
+  if (results && results.success) {
+    // ==== IMAGE CASE ====
+    if (results.type === 'image') {
+      originalImage.style.display = "block";
+      processedImageView.style.display = "block";
+      originalImage.src = results.original_image;
+      processedImageView.src = results.image
+        ? 'data:image/jpeg;base64,' + results.image
+        : results.processed_image;
+    }
+
+    // ==== VIDEO CASE ====
+    else if (results.type === 'video') {
+      originalVideoSource.src = results.original_video + '?t=' + Date.now(); // cache-busting
+      processedVideoSource.src = results.processed_video + '?t=' + Date.now();
+      originalVideo.style.display = "block";
+      processedVideoView.style.display = "block";
+      originalVideo.load();
+      processedVideoView.load();
+    }
+
+    // ==== Fill Table ====
+    resultsTable.innerHTML = '';
+    if (results.results && results.results.length > 0) {
+      results.results.forEach(result => {
+        const row = resultsTable.insertRow();
+        const plateCell = row.insertCell(0);
+        plateCell.textContent = result.text || '';
+      });
+    }
+  } else {
+    console.warn("No valid detection results found.");
+  }
+
+  // ==== Download Button ====
+  downloadButton.addEventListener('click', function () {
+    const link = document.createElement('a');
+    if (results.type === 'image') {
+      link.href = processedImageView.src;
+      link.download = 'detected_plates.jpg';
+    } else if (results.type === 'video') {
+      link.href = results.processed_video;
+      link.download = 'detected_plates.mp4';
+    }
+    link.click();
+  });
+});
+</script>
+
+
+</body>
+</html>
